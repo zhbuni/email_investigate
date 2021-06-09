@@ -42,7 +42,9 @@ def send_mail(to, answer, subject):
 
 
 def suspect(episode, sus_f_name, sus_l_name, to, subject):
+    # print(episode, sus_l_name, sus_f_name)
     answer = db.check_suspect(episode, sus_f_name, sus_l_name)
+    print(answer)
     if answer:
        send_mail(to, answer, subject)
     elif not answer:
@@ -66,8 +68,8 @@ def main():
             parsed_message = idm[3].strip()
             subject = idm[2]
             FROM = idm[1]
-            print(parsed_message, subject, FROM)
-            words = re.split('-| |; |,|:|\n|\r', parsed_message)
+            # print(parsed_message, subject, FROM)
+            words = re.split('\.|-| |; |,|:|\n|\r', parsed_message)
             normal_words = []
 
             for word in words:
@@ -78,33 +80,38 @@ def main():
 
             print(normal_words)
 
-            episode = re.match(r'АФТ\d+', subject)
-            print(episode)
-            sus_f_name = ''
-            sus_l_name = ''
+            episode = re.match(r'АФТ\d+', subject).group(0)
+            # print(episode)
+            sus_f_name = []
+            sus_l_name = []
             action = ''
             item = ''
             for n_word in normal_words:
                 if n_word.startswith('АФТ'):
                     episode = n_word
                 if n_word in first_names:
-                    sus_f_name = n_word
+                    sus_f_name.append(n_word)
                 if n_word in last_names:
-                    sus_l_name = n_word
+                    sus_l_name.append(n_word)
                 if n_word in items:
                     item = n_word
                 if n_word == 'ПОДСКАЗКА' or n_word == "ОТВЕТ":
                     action = n_word
 
-            if episode and sus_f_name and sus_l_name or episode and item and action:
-                print(FROM[1])
-                print(episode)
+            if len(sus_f_name) > 1 or len(sus_l_name) > 1:
+                answer = 'Кажется вам сложно определиться. Кто-то из них точно виноват, а кто-то нет. ' \
+                         'Я думаю вам нужно еще раз пройтись по уликам.'
+                send_mail(FROM, answer, subject)
+
+            elif episode and sus_f_name and sus_l_name or episode and item and action:
+                # print(FROM[1])
+                # print(episode)
                 if sus_f_name and sus_l_name:
-                    print(sus_f_name, sus_l_name)
-                    suspect(episode, sus_f_name, sus_l_name, FROM, subject)
+                    # print(sus_f_name[0], sus_l_name[0])
+                    suspect(episode, sus_f_name[0], sus_l_name[0], FROM, subject)
                 if item and action:
                     hint(episode, action, item, FROM, subject)
-                    print(action, item)
+                    # print(action, item)
             else:
                 answer = 'Не совсем понимаю о чем речь, можете сформулировать свой вопрос иначе?'
                 send_mail(FROM, answer, subject)

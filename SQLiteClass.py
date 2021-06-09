@@ -10,7 +10,7 @@ suspects = [
     (1, 'МАКСИМ', 'ИВАНОВ'),
     (2, 'ИГОРЬ', 'СМИРНОВ'),
     (3, 'АЛЕКСЕЙ', 'СИДОРОВ'),
-    (4, 'АНДРЕЙ', 'ВОРОБЬЕВ'),
+    (4, 'АНДРЕЙ', 'ВОРОБЬЁВ'),
     (5, 'ЕВГЕНИЙ', 'ПЕТРОВ'),
     (6, 'СЕРГЕЙ', 'КАБАЧКОВ'),
     (7, 'ДЕНИС', 'ПЕТРУШКИН'),
@@ -32,15 +32,15 @@ episodes = [
 
 answers = [
     #id, episode_id, suspect_id, answer
-    (1, 1, 1, 'Вы правы!'),
-    (2, 1, 2, 'Вы правы! [Доказательства](https://www.youtube.com/watch?v=dQw4w9WgXcQ)'),
-    (3, 2, 3, 'Вы правы! [Доказательства](https://www.youtube.com/watch?v=dQw4w9WgXcQ)'),
-    (4, 2, 4, 'Вы правы! [Доказательства](https://www.youtube.com/watch?v=dQw4w9WgXcQ)'),
-    (5, 3, 5, 'Вы правы! [Доказательства](https://www.youtube.com/watch?v=dQw4w9WgXcQ)'),
-    (6, 3, 6, 'Вы правы! [Доказательства](https://www.youtube.com/watch?v=dQw4w9WgXcQ)'),
-    (7, 4, 7, 'Вы правы! [Доказательства](https://www.youtube.com/watch?v=dQw4w9WgXcQ)'),
-    (8, 5, 8, 'Вы правы! [Доказательства](https://www.youtube.com/watch?v=dQw4w9WgXcQ)'),
-    (9, 6, 9, 'Вы правы! [Доказательства](https://www.youtube.com/watch?v=dQw4w9WgXcQ)'),
+    (1, 1, 1, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (2, 1, 2, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (3, 2, 3, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (4, 2, 4, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (5, 3, 5, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (6, 3, 6, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (7, 4, 7, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (8, 5, 8, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (9, 6, 9, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
 ]
 
 # id, episode_id, item, hint, answer
@@ -161,15 +161,17 @@ class DB:
 
     def check_suspect(self, episode, first_name, last_name):
         """Проверить подозреваемого"""
-        self.cursor.execute('''
+        sql = '''
         SELECT answer from Answers as a
         JOIN Episodes as e on a.episode_id = e.id
         JOIN Suspects as s on a.suspect_id = s.id
         WHERE s.first_name LIKE "{}" AND last_name LIKE "{}"
         AND e.box_name LIKE "{}"
-        '''.format(first_name, last_name, episode))
+        '''.format(first_name, last_name, episode)
+        # print(sql)
+        self.cursor.execute(sql)
         boo = self.cursor.fetchone()
-        # print(boo)
+        print(boo)
         if boo:
             return boo[0]
         else:
