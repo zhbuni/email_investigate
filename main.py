@@ -24,15 +24,8 @@ detective_login = os.environ['DETECTIVE_LOGIN']
 detective_password = os.environ['DETECTIVE_PASSWORD']
 
 db = DB("database.db")
-# db.create_db()
-# db.fill_db()
-# db.get_box('01203')
 first_names, last_names = db.get_all_names()
 items = db.get_all_items()
-
-
-# print(items)
-# print(first_names, last_names)
 
 
 def send_mail(to, answer, subject):
@@ -44,12 +37,28 @@ def send_mail(to, answer, subject):
 def suspect(episode, sus_f_name, sus_l_name, to, subject):
     # print(episode, sus_l_name, sus_f_name)
     answer = db.check_suspect(episode, sus_f_name, sus_l_name)
-    print(answer)
-    if answer:
-       send_mail(to, answer, subject)
-    elif not answer:
-        answer = 'Нельзя однозначно вычеркнуть подозреваемого {} {} из списка подозреваемых.'.format(sus_f_name.capitalize(), sus_l_name.capitalize())
-        send_mail(to, answer, subject)
+    if db.check_suspect_repeat(sus_f_name, sus_l_name):
+        email = 'Мы уже все выяснили про этого подозреваемого'
+        send_mail(to, email, subject)
+    else:
+        if answer:
+            email = 'Молодец! {} {} действительно не виновен.\n'.format(sus_f_name.capitalize(), sus_l_name.capitalize())
+            if not db.get_try(to, episode):
+                email += 'Вот материалы которые подтверждают твою догадку: {}\n'.format(answer)
+            db.right_answer(to, episode)
+            if db.get_guessed(to, episode) >= db.get_suspect_count(episode):
+                # TODO обнулить guessed
+                email += 'Жди новую коробку!'
+            else:
+                evidence = db.get_second_evidence(to)
+                email += 'Кажется из имеющихся улик можно вычеркнуть еще одного. Взгляни на эти материалы {}'.format(evidence)
+            send_mail(to, email, subject)
+        elif not answer:
+            # TODO выдать улику если нужно
+            db.wrong_answer(to, episode)
+            email = 'Нельзя однозначно вычеркнуть подозреваемого {} {} из списка подозреваемых.'.format(
+                sus_f_name.capitalize(), sus_l_name.capitalize())
+            send_mail(to, email, subject)
 
 
 def hint(episode, action, item, to, subject):
@@ -80,7 +89,7 @@ def main():
 
             print(normal_words)
 
-            episode = re.match(r'АФТ\d+', subject).group(0)
+            episode = re.search(r'АФТ\d+', subject).group(0)
             # print(episode)
             sus_f_name = []
             sus_l_name = []

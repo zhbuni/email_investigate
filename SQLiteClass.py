@@ -5,20 +5,6 @@ import sqlite3
 
 # Создание таблицы
 
-# id, episode_id, first_name, last_name
-suspects = [
-    (1, 'МАКСИМ', 'ИВАНОВ'),
-    (2, 'ИГОРЬ', 'СМИРНОВ'),
-    (3, 'АЛЕКСЕЙ', 'СИДОРОВ'),
-    (4, 'АНДРЕЙ', 'ВОРОБЬЁВ'),
-    (5, 'ЕВГЕНИЙ', 'ПЕТРОВ'),
-    (6, 'СЕРГЕЙ', 'КАБАЧКОВ'),
-    (7, 'ДЕНИС', 'ПЕТРУШКИН'),
-    (8, 'ИВАН', 'МАКАРОВ'),
-    (9, 'МИХАИЛ', 'ПЕЛЬМЕШКИН'),
-    (10, 'КОНСТАНТИН', 'СОСИСЬКИН'),
-]
-
 # id, episode, suspect_id
 episodes = [
     (1, 'АФТ001'),
@@ -27,21 +13,37 @@ episodes = [
     (4, 'АФТ004'),
     (5, 'АФТ005'),
     (6, 'АФТ006'),
-    (7, 'АФТ000'),
 ]
 
-answers = [
-    #id, episode_id, suspect_id, answer
-    (1, 1, 1, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
-    (2, 1, 2, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
-    (3, 2, 3, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
-    (4, 2, 4, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
-    (5, 3, 5, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
-    (6, 3, 6, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
-    (7, 4, 7, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
-    (8, 5, 8, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
-    (9, 6, 9, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+# id, episode_id, first_name, last_name, evidence
+suspects = [
+    (1, 'МАКСИМ', 'ИВАНОВ', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (2, 'ИГОРЬ', 'СМИРНОВ', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (3, 'АЛЕКСЕЙ', 'СИДОРОВ', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (4, 'АНДРЕЙ', 'ВОРОБЬЁВ', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (5, 'ЕВГЕНИЙ', 'ПЕТРОВ', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (6, 'СЕРГЕЙ', 'КАБАЧКОВ', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (7, 'ДЕНИС', 'ПЕТРУШКИН', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (8, 'ИВАН', 'МАКАРОВ', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (9, 'МИХАИЛ', 'ПЕЛЬМЕШКИН', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    (10, 'КОНСТАНТИН', 'СОСИСЬКИН', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
 ]
+
+# id, episode_id, suspect_id
+answers = [
+    (1, 1, 1),
+    (2, 1, 2),
+    (3, 2, 3),
+    (4, 2, 4),
+    (5, 3, 5),
+    (6, 3, 6),
+    (7, 4, 7),
+    (8, 5, 8),
+    (9, 6, 9),
+]
+
+# player_id, email, answer_id
+# players = []
 
 # id, episode_id, item, hint, answer
 hints = [
@@ -62,6 +64,7 @@ hints = [
 
 class DB:
     """Операции с БД"""
+
     def __init__(self, dbname):
         """Подключение к БД"""
         self.conn = sqlite3.connect(dbname)
@@ -69,10 +72,10 @@ class DB:
 
     def fill_db(self):
         """Наполнить БД"""
-        self.cursor.executemany("INSERT INTO Suspects VALUES (?, ?, ?);", suspects)
+        self.cursor.executemany("INSERT INTO Suspects VALUES (?, ?, ?, ?);", suspects)
         self.cursor.executemany("INSERT INTO Episodes VALUES (?, ?);", episodes)
         self.cursor.executemany("INSERT INTO Hints VALUES (?, ?, ?, ?, ?);", hints)
-        self.cursor.executemany("INSERT INTO Answers VALUES (?, ?, ?, ?);", answers)
+        self.cursor.executemany("INSERT INTO Answers VALUES (?, ?, ?);", answers)
         self.conn.commit()
 
     def create_db(self):
@@ -81,7 +84,8 @@ class DB:
                   (
                   id INTEGER PRIMARY KEY,
                   first_name TEXT,
-                  last_name TEXT
+                  last_name TEXT,
+                  evidence TEXT
                   )
                """)
 
@@ -108,17 +112,27 @@ class DB:
                           id INTEGER PRIMARY KEY,
                           episode_id INTEGER,
                           suspect_id INTEGER,
-                          answer TEXT,
                           FOREIGN KEY (episode_id) REFERENCES Episodes(id),
                           FOREIGN KEY (suspect_id) REFERENCES Suspects(id)
                           )
                        """)
+
+        self.cursor.execute("""CREATE TABLE IF NOT EXISTS Players
+                            (
+                            email TEXT,
+                            answer_id INTEGER,
+                            try INTEGER default 0,
+                            guessed INTEGER default 0,
+                            FOREIGN KEY (answer_id) REFERENCES Answers(id)
+                            )
+        """)
 
     def drop_db(self):
         self.cursor.execute('''DROP TABLE Answers''')
         self.cursor.execute('''DROP TABLE Episodes''')
         self.cursor.execute('''DROP TABLE Hints''')
         self.cursor.execute('''DROP TABLE Suspects''')
+        self.cursor.execute('''DROP TABLE Players''')
 
     def get_all_names(self):
         """Получить массивы с уникальными именами фамилиями"""
@@ -145,8 +159,6 @@ class DB:
             items.append(arr[i][0])
         return items
 
-
-
     def get_box(self, box_name):
         query = '''
                 SELECT e.box_name, h.episode_id, s.first_name, s.last_name, h.item, h.hint, h.answer
@@ -162,7 +174,7 @@ class DB:
     def check_suspect(self, episode, first_name, last_name):
         """Проверить подозреваемого"""
         sql = '''
-        SELECT answer from Answers as a
+        SELECT s.evidence from Answers as a
         JOIN Episodes as e on a.episode_id = e.id
         JOIN Suspects as s on a.suspect_id = s.id
         WHERE s.first_name LIKE "{}" AND last_name LIKE "{}"
@@ -171,7 +183,7 @@ class DB:
         # print(sql)
         self.cursor.execute(sql)
         boo = self.cursor.fetchone()
-        print(boo)
+        # print(boo)
         if boo:
             return boo[0]
         else:
@@ -187,6 +199,105 @@ class DB:
                     from Episodes as e
                     JOIN Hints as h on e.id = h.episode_id
                     WHERE h.item LIKE "{}" AND e.box_name LIKE "{}"'''.format(action, item, episode))
+        boo = self.cursor.fetchone()
+        if boo:
+            return boo[0]
+        else:
+            return False
+
+    def right_answer(self, email, episode):
+        sql = '''UPDATE Players SET answer_id=(
+            SELECT id FROM Episodes WHERE box_name LIKE "{}"
+        ), try=0, guessed=guessed+1 WHERE email="{}"'''.format(episode, email)
+        # print(sql)
+        self.cursor.execute(sql)
+        if self.cursor.rowcount < 1:
+            sql = '''INSERT INTO Players (email, answer_id, try, guessed) VALUES ("{}", (
+            SELECT id FROM Episodes WHERE box_name LIKE "{}"
+        ), 0, 1)'''.format(email, episode)
+            # print(sql)
+            self.cursor.execute(sql)
+        self.conn.commit()
+
+    def wrong_answer(self, email, episode):
+        sql = '''UPDATE Players SET answer_id=(
+            SELECT id FROM Episodes WHERE box_name LIKE "{}"
+        ), try=try+1 WHERE email="{}"'''.format(episode, email)
+        # print(sql)
+        self.cursor.execute(sql)
+        if self.cursor.rowcount < 1:
+            sql = '''INSERT INTO Players (email, answer_id, try, guessed) VALUES ("{}", (
+            SELECT id FROM Episodes WHERE box_name LIKE "{}"
+        ), 1, 0)'''.format(email, episode)
+            # print(sql)
+            self.cursor.execute(sql)
+        self.conn.commit()
+
+
+    def get_try(self, email, episode):
+        sql = '''SELECT try FROM Players
+            WHERE email="{}"
+            AND answer_id=(
+                    SELECT id FROM Episodes WHERE box_name LIKE "{}"
+                )'''.format(email, episode)
+        # print(sql)
+        self.cursor.execute(sql)
+        boo = self.cursor.fetchone()
+        if boo:
+            return True
+        else:
+            return False
+
+    def get_guessed(self, email, episode):
+        sql = '''SELECT guessed FROM Players
+            WHERE email="{}"
+            AND answer_id=(
+                    SELECT id FROM Episodes WHERE box_name LIKE "{}"
+                )'''.format(email, episode)
+        # print(sql)
+        self.cursor.execute(sql)
+        boo = self.cursor.fetchone()
+        if boo:
+            return boo[0]
+        else:
+            return 0
+
+    def get_suspect_count(self, episode):
+        sql = '''
+        SELECT count(*) FROM Answers WHERE episode_id = (SELECT id FROM Episodes WHERE box_name LIKE "{}")
+        '''.format(episode)
+        self.cursor.execute(sql)
+        boo = self.cursor.fetchone()
+        if boo:
+            return boo[0]
+        else:
+            return 0
+
+
+    def check_suspect_repeat(self, first_name, last_name):
+        sql = '''
+            SELECT answer_id from Players P JOIN Answers A on P.answer_id = A.id JOIN Suspects S on S.id = A.suspect_id
+            WHERE S.first_name LIKE "{}" AND S.last_name LIKE "{}"
+        '''.format(first_name, last_name)
+        self.cursor.execute(sql)
+        boo = self.cursor.fetchone()
+        if boo:
+            return True
+        else:
+            return False
+
+    def get_second_evidence(self, email):
+        sql = '''
+        SELECT evidence FROM Suspects S JOIN Answers A on S.id = A.suspect_id
+        WHERE A.episode_id = (
+            SElECT episode_id FROM Answers A JOIN Players P on A.id = P.answer_id
+            WHERE P.email LIKE "{}"
+        )
+        AND A.id != (
+            SELECT answer_id FROM Players WHERE email LIKE "{}"
+        )
+        '''.format(email, email)
+        self.cursor.execute(sql)
         boo = self.cursor.fetchone()
         if boo:
             return boo[0]
