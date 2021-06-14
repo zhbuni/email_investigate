@@ -42,22 +42,27 @@ def suspect(episode, sus_f_name, sus_l_name, to, subject):
         send_mail(to, email, subject)
     else:
         if answer:
-            email = 'Молодец! {} {} действительно не виновен.\n'.format(sus_f_name.capitalize(), sus_l_name.capitalize())
-            if not db.get_try(to, episode):
+            email = 'Молодец! {} {} действительно невиновен.\n'.format(sus_f_name.capitalize(), sus_l_name.capitalize())
+            if not db.get_try(to):
                 email += 'Вот материалы которые подтверждают твою догадку: {}\n'.format(answer)
-            db.right_answer(to, episode)
-            if db.get_guessed(to, episode) >= db.get_suspect_count(episode):
-                # TODO обнулить guessed
+            db.right_answer(to, sus_f_name, sus_l_name)
+            if db.get_guessed(to) >= db.get_suspect_count(episode):
+                db.rezoing(to)
                 email += 'Жди новую коробку!'
             else:
                 evidence = db.get_second_evidence(to)
                 email += 'Кажется из имеющихся улик можно вычеркнуть еще одного. Взгляни на эти материалы {}'.format(evidence)
             send_mail(to, email, subject)
         elif not answer:
-            # TODO выдать улику если нужно
-            db.wrong_answer(to, episode)
-            email = 'Нельзя однозначно вычеркнуть подозреваемого {} {} из списка подозреваемых.'.format(
+            email = 'Нельзя однозначно вычеркнуть подозреваемого {} {} из списка подозреваемых.\n'.format(
                 sus_f_name.capitalize(), sus_l_name.capitalize())
+
+            if not db.get_try(to):
+                evidence = db.get_evidence(episode)
+                email += 'Вот материалы которые могут помочь: {}\n'.format(evidence)
+
+            db.wrong_answer(to)
+
             send_mail(to, email, subject)
 
 
