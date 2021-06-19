@@ -16,5 +16,8 @@ class IMAP:
         else:
             return []
 
+    def delete(self, uid):
+        self.mailbox.delete(uid)
+
     def close(self):
         self.mailbox.logout()

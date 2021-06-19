@@ -52,10 +52,15 @@ def suspect(episode, sus_f_name, sus_l_name, to, subject):
             else:
                 evidence = db.get_second_evidence(to)
                 email += 'Кажется из имеющихся улик можно вычеркнуть еще одного. Взгляни на эти материалы {}'.format(evidence)
+            if db.if_final(episode):
+                email = 'Убийца найден! Спасибо за помощь!'
             send_mail(to, email, subject)
         elif not answer:
             email = 'Нельзя однозначно вычеркнуть подозреваемого {} {} из списка подозреваемых.\n'.format(
                 sus_f_name.capitalize(), sus_l_name.capitalize())
+
+            if db.if_final(episode):
+                email = 'Ты уверен в этом?'
 
             if not db.get_try(to):
                 evidence = db.get_evidence(episode)
@@ -78,10 +83,11 @@ def main():
 
     emails = imap.get_messages()
     if len(emails) > 0:
-        for idm in emails:
-            parsed_message = idm[3].strip()
-            subject = idm[2]
-            FROM = idm[1]
+        for email in emails:
+            parsed_message = email[3].strip()
+            subject = email[2]
+            FROM = email[1]
+            idm = email[0]
             # print(parsed_message, subject, FROM)
             words = re.split('\.|-| |; |,|:|\n|\r', parsed_message)
             normal_words = []
@@ -130,16 +136,14 @@ def main():
                 answer = 'Не совсем понимаю о чем речь, можете сформулировать свой вопрос иначе?'
                 send_mail(FROM, answer, subject)
 
-            # imap.delete(idm)
-            #
+            imap.delete(idm)
 
-            #
-            # else:
-            #     print('null')
+        else:
+            print('null')
 
     imap.close()
 
 
 while True:
     main()
-    time.sleep(60)
+    time.sleep(20)

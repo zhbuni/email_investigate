@@ -7,12 +7,12 @@ import sqlite3
 
 # id, episode, suspect_id
 episodes = [
-    (1, 'АФТ001'),
-    (2, 'АФТ002'),
-    (3, 'АФТ003'),
-    (4, 'АФТ004'),
-    (5, 'АФТ005'),
-    (6, 'АФТ006'),
+    (1, 'АФТ001', 0),
+    (2, 'АФТ002', 0),
+    (3, 'АФТ003', 0),
+    (4, 'АФТ004', 0),
+    (5, 'АФТ005', 0),
+    (6, 'АФТ006', 1),
 ]
 
 # id, episode_id, first_name, last_name, evidence
@@ -73,7 +73,7 @@ class DB:
     def fill_db(self):
         """Наполнить БД"""
         self.cursor.executemany("INSERT INTO Suspects VALUES (?, ?, ?, ?);", suspects)
-        self.cursor.executemany("INSERT INTO Episodes VALUES (?, ?);", episodes)
+        self.cursor.executemany("INSERT INTO Episodes VALUES (?, ?, ?);", episodes)
         self.cursor.executemany("INSERT INTO Hints VALUES (?, ?, ?, ?, ?);", hints)
         self.cursor.executemany("INSERT INTO Answers VALUES (?, ?, ?);", answers)
         self.conn.commit()
@@ -92,7 +92,8 @@ class DB:
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS Episodes
                   (
                   id INTEGER PRIMARY KEY,
-                  box_name TEXT
+                  box_name TEXT,
+                  is_final INTEGER DEFAULT 0
                   )
                """)
 
@@ -272,6 +273,18 @@ class DB:
             return boo[0]
         else:
             return 0
+
+    def if_final(self, episode):
+        sql = '''
+            SELECT is_final FROM Episodes WHERE box_name LIKE "{}"
+        '''.format(episode)
+        self.cursor.execute(sql)
+        boo = self.cursor.fetchone()
+        if boo:
+            if boo[0] == 1:
+                return True
+            else:
+                return False
 
 
     def check_suspect_repeat(self, first_name, last_name):
