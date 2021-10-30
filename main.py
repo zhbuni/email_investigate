@@ -100,7 +100,10 @@ def main():
 
             print(normal_words)
 
-            episode = re.search(r'АФТ\d+', subject).group(0)
+            try:
+                episode = re.search(r'АФТ\d+', subject.upper()).group(0)
+            except:
+                episode = ''
             # print(episode)
             sus_f_name = []
             sus_l_name = []
