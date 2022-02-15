@@ -5,6 +5,7 @@ import smtplib
 from email.message import EmailMessage
 from email.headerregistry import Address
 
+
 class SMTP:
     """Операции с SMTP сервером"""
     def __init__(self, uri, login, password, from_mail):
@@ -33,7 +34,6 @@ class SMTP:
         # msg['To'] = (Address("Penelope Pussycat", "penelope", TO))
         # msg.set_content(TEXT)
         # self.server.send_message(msg)
-
 
     def close(self):
         """Отклюситься от сервера"""

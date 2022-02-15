@@ -3,11 +3,12 @@
 import os
 import re
 import time
+from curses.ascii import isdigit
+
 import pymorphy2
+from dotenv import load_dotenv
 
 morph = pymorphy2.MorphAnalyzer()
-
-from dotenv import load_dotenv
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
@@ -26,6 +27,10 @@ detective_password = os.environ['DETECTIVE_PASSWORD']
 db = DB("database.db")
 first_names, last_names = db.get_all_names()
 items = db.get_all_items()
+# items = ['папка выпускника']
+print(sorted(items))
+print('код на открытие ящика' in items)
+list_of_ids = []
 
 
 def send_mail(to, answer, subject):
@@ -72,60 +77,131 @@ def suspect(episode, sus_f_name, sus_l_name, to, subject):
 
 
 def hint(episode, action, item, to, subject):
-    answer = db.get_hint(episode, action, item)
+    hint_level = db.get_hint_level(to, item)
+    if not hint_level:
+        db.add_player_item(to, item)
+    answer = db.get_hint(episode, action, item, to)
+    if answer == 'OVERLOAD':
+        answer = 'Подумайте сами'
     if not answer:
         answer = 'Не совсем понимаю о чем речь, можете сформулировать свой вопрос иначе?'
     send_mail(to, answer, subject)
 
 
 def main():
+    print('In main')
     imap = IMAP(imap_server, detective_login, detective_password)
 
     emails = imap.get_messages()
+    print(emails)
     if len(emails) > 0:
         for email in emails:
-            parsed_message = email[3].strip()
+            if email[0] in list_of_ids:
+                continue
+            list_of_ids.append(email[0])
+            print(email)
             subject = email[2]
             FROM = email[1]
+            if FROM.split('@')[1] in ('yandex.ru', 'ya.ru'):
+                message = email[4][email[4].find('>') + 1:]
+                message = message[:message.find('<')]
+            else:
+                message = email[3]
+            parsed_message = message.strip()
+            print(FROM.strip())
+            player = db.get_player(FROM.strip())
+            if not player:
+                db.add_player(FROM)
             idm = email[0]
             # print(parsed_message, subject, FROM)
             words = re.split('\.|-| |; |,|:|\n|\r', parsed_message)
+            print(words)
             normal_words = []
 
             for word in words:
                 p = morph.parse(word)[0]
                 normal_words.append(p.normal_form.upper())
-
-            del words
-
             print(normal_words)
-
-            try:
-                episode = re.search(r'АФТ\d+', subject.upper()).group(0)
-            except:
-                episode = ''
+            del words
+            episode = subject
+            # try:
+            #     episode = re.search(r'АФ\d+', subject.upper()).group(0)
+            # except:
+            #     episode = ''
             # print(episode)
             sus_f_name = []
             sus_l_name = []
             action = ''
             item = ''
+            flag = False
+            if 'ПРОТОКОЛ' in normal_words:
+                item = 'Протокол опроса Кукушкиной Алины'
+                flag = True
             for n_word in normal_words:
-                if n_word.startswith('АФТ'):
-                    episode = n_word
-                if n_word in first_names:
-                    sus_f_name.append(n_word)
-                if n_word in last_names:
-                    sus_l_name.append(n_word)
-                if n_word in items:
-                    item = n_word
+                for el in items:
+                    if not flag and 'протокол' in str(el).lower():
+                        continue
+
+                    if item:
+                        break
+                    test_word = ''
+                    splitted_item = []
+                    for el1 in el.split():
+                        p = morph.parse(el1)[0]
+                        splitted_item.append(p.normal_form.upper())
+                    for word in splitted_item:
+                        if n_word == word:
+                            test_word = n_word
+                    if not test_word:
+                        continue
+                    is_break = False
+                    if len(message.split()) == 1:
+                        item = el
+                        is_break = True
+                        break
+                    else:
+                        for word in normal_words:
+                            if word in splitted_item and word != test_word and not item:
+                                item = el
+                                is_break = True
+                                break
+                    if is_break:
+                        break
+                    if n_word.startswith('АФ'):
+                        episode = n_word
+                    if n_word in first_names:
+                        sus_f_name.append(n_word)
+                    if n_word in last_names:
+                        sus_l_name.append(n_word)
+                    # if n_word in items:
+                    #     item = n_word
                 if n_word == 'ПОДСКАЗКА' or n_word == "ОТВЕТ":
                     action = n_word
-
+            if not action:
+                action = 'ПОДСКАЗКА'
             if len(sus_f_name) > 1 or len(sus_l_name) > 1:
                 answer = 'Кажется вам сложно определиться. Кто-то из них точно виноват, а кто-то нет. ' \
                          'Я думаю вам нужно еще раз пройтись по уликам.'
                 send_mail(FROM, answer, subject)
+            elif episode and episode.split()[1] == 'КОД':
+                digits = list(filter(lambda x: x.isdigit(), normal_words))
+                if len(digits) == 1:
+                    digit = digits[0]
+                    if str(digit) == '420':
+                        string_ans = '''Браво! Все получилось! Тут внутри Блокнот с записями и флешка (фото по ссылкам - https://clck.ru/bUU2Y, https://clck.ru/bUUNB ). 
+Пришлю вам все это в следующей посылке. 
 
+С уважением,
+Кира Райнис'''
+                        send_mail(FROM, string_ans, subject)
+                    else:
+                        string_ans = '''Не подходит. 
+Подумайте еще.
+Жду вашу версию.
+                                    
+С уважением,
+Кира Райнис'''
+                        send_mail(FROM, string_ans, subject)
             elif episode and sus_f_name and sus_l_name or episode and item and action:
                 # print(FROM[1])
                 # print(episode)
@@ -133,6 +209,7 @@ def main():
                     # print(sus_f_name[0], sus_l_name[0])
                     suspect(episode, sus_f_name[0], sus_l_name[0], FROM, subject)
                 if item and action:
+                    print(episode, action, item, FROM, subject)
                     hint(episode, action, item, FROM, subject)
                     # print(action, item)
             else:
@@ -147,6 +224,8 @@ def main():
     imap.close()
 
 
-while True:
-    main()
-    time.sleep(20)
+if __name__ == '__main__':
+    print('started')
+    while True:
+        main()
+        time.sleep(5)

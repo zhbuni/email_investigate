@@ -1,19 +1,25 @@
 import sqlite3
-
-# conn = sqlite3.connect("database.db")
-# cursor = conn.cursor()
+from excel_test import get_parsed_table
 
 # Создание таблицы
 
+table = get_parsed_table()
+
 # id, episode, suspect_id
-episodes = [
-    (1, 'АФТ001', 0),
-    (2, 'АФТ002', 0),
-    (3, 'АФТ003', 0),
-    (4, 'АФТ004', 0),
-    (5, 'АФТ005', 0),
-    (6, 'АФТ006', 1),
-]
+episodes = []
+st = set([el['theme'] for el in table[1:]])
+count = 0
+for el in st:
+    episodes.append((count, el, 0))
+    count += 1
+# episodes = [
+#     (1, 'АФТ001', 0),
+#     (2, 'АФТ002', 0),
+#     (3, 'АФТ003', 0),
+#     (4, 'АФТ004', 0),
+#     (5, 'АФТ005', 0),
+#     (6, 'АФТ006', 1),
+# ]
 
 # id, episode_id, first_name, last_name, evidence
 suspects = [
@@ -45,21 +51,43 @@ answers = [
 # player_id, email, answer_id
 # players = []
 
-# id, episode_id, item, hint, answer
-hints = [
-    (1, 1, 'ФОНАРИК', 'Подсказка Фонарик', 'Ответ Фонарик'),
-    (2, 1, 'АЛЬБОМ', 'Подсказка АЛЬБОМ', 'Ответ АЛЬБОМ'),
-    (3, 2, 'КОМПАС', 'Подсказка АЛЬБОМ', 'Ответ АЛЬБОМ'),
-    (4, 2, 'РУЧКА', 'Подсказка РУЧКА', 'Ответ РУЧКА'),
-    (5, 3, 'БЛОКНОТ', 'Подсказка БЛОКНОТ', 'Ответ БЛОКНОТ'),
-    (6, 3, 'КАРАНДАШ', 'Подсказка КАРАНДАШ', 'Ответ КАРАНДАШ'),
-    (7, 4, 'МЫШЬ', 'Подсказка МЫШЬ', 'Ответ МЫШЬ'),
-    (8, 4, 'НАУШНИКИ', 'Подсказка НАУШНИКИ', 'Ответ НАУШНИКИ'),
-    (9, 5, 'ФОТО', 'Подсказка ФОТО', 'Ответ ФОТО'),
-    (10, 5, 'БУТЫЛКА', 'Подсказка БУТЫЛКА', 'Ответ БУТЫЛКА'),
-    (11, 6, 'КРОВЬ', 'Подсказка КРОВЬ', 'Ответ КРОВЬ'),
-    (12, 6, 'ШПРИЦ', 'Подсказка ШПРИЦ', 'Ответ ШПРИЦ'),
-]
+# id, episode_id, item, hint, level, answer
+hints = []
+count = 0
+for el in table[1:]:
+    episode_id = [ep[0] for ep in episodes if ep[1] == el['theme']][0]
+    item = el['keyword']
+    hint = f'Подсказка {item}'
+    level = 1
+    answer = el['tip_1']
+    hints.append((count, episode_id, item, hint, level, answer))
+    if el['tip_2']:
+        count += 1
+        level += 1
+        answer = el['tip_2']
+        hints.append((count, episode_id, item, hint, level, answer))
+    if el['tip_3']:
+        count += 1
+        level += 1
+        answer = el['tip_3']
+        hints.append((count, episode_id, item, hint, level, answer))
+    count += 1
+# print(hints)
+# hints = [
+#     (0, 1, 'ФОНАРИК1', 'Подсказка Фонарик1', 1, 'Ответ Фонарик1'),
+#     (1, 1, 'ФОНАРИК1', 'Подсказка Фонарик2', 2, 'Ответ Фонарик2'),
+#     (2, 1, 'АЛЬБОМ1', 'Подсказка АЛЬБОМ1', 1, 'Ответ АЛЬБОМ'),
+#     (3, 2, 'КОМПАС', 'Подсказка АЛЬБОМ1', 1, 'Ответ АЛЬБОМ'),
+#     (4, 2, 'РУЧКА', 'Подсказка РУЧКА', 1, 'Ответ РУЧКА'),
+#     (5, 3, 'БЛОКНОТ', 'Подсказка БЛОКНОТ', 1, 'Ответ БЛОКНОТ'),
+#     (6, 3, 'КАРАНДАШ', 'Подсказка КАРАНДАШ', 1, 'Ответ КАРАНДАШ'),
+#     (7, 4, 'МЫШЬ', 'Подсказка МЫШЬ', 1, 'Ответ МЫШЬ'),
+#     (8, 4, 'НАУШНИКИ', 'Подсказка НАУШНИКИ', 1, 'Ответ НАУШНИКИ'),
+#     (9, 5, 'ФОТО', 'Подсказка ФОТО', 1, 'Ответ ФОТО'),
+#     (10, 5, 'БУТЫЛКА', 'Подсказка БУТЫЛКА', 1, 'Ответ БУТЫЛКА'),
+#     (11, 6, 'КРОВЬ', 'Подсказка КРОВЬ', 1, 'Ответ КРОВЬ'),
+#     (12, 6, 'ШПРИЦ', 'Подсказка ШПРИЦ', 1, 'Ответ ШПРИЦ'),
+# ]
 
 
 class DB:
@@ -74,7 +102,7 @@ class DB:
         """Наполнить БД"""
         self.cursor.executemany("INSERT INTO Suspects VALUES (?, ?, ?, ?);", suspects)
         self.cursor.executemany("INSERT INTO Episodes VALUES (?, ?, ?);", episodes)
-        self.cursor.executemany("INSERT INTO Hints VALUES (?, ?, ?, ?, ?);", hints)
+        self.cursor.executemany("INSERT INTO Hints VALUES (?, ?, ?, ?, ?, ?);", hints)
         self.cursor.executemany("INSERT INTO Answers VALUES (?, ?, ?);", answers)
         self.conn.commit()
 
@@ -103,10 +131,21 @@ class DB:
                   episode_id INTEGER,
                   item TEXT,
                   hint TEXT,
+                  level INTEGER,
                   answer TEXT,
                   FOREIGN KEY (episode_id) REFERENCES Episodes(id)
                   )
                """)
+
+        self.cursor.execute("""CREATE TABLE IF NOT EXISTS Player_hints
+                          (
+                          id INTEGER PRIMARY KEY,
+                          player_id INTEGER REFERENCES PLAYERS(id),
+                          email TEXT,
+                          item TEXT REFERENCES Hints(item),
+                          hint_level INTEGER DEFAULT 1
+                          )
+                       """)
 
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS Answers
                           (
@@ -120,6 +159,7 @@ class DB:
 
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS Players
                             (
+                            id INTEGER PRIMARY KEY,
                             email TEXT,
                             answer_id INTEGER,
                             try INTEGER default 0,
@@ -191,21 +231,50 @@ class DB:
         else:
             return False
 
-    def get_hint(self, episode, action, item):
+    def get_hint(self, episode, action, item, email):
         if action == 'ПОДСКАЗКА':
             action = 'hint'
         else:
             action = 'answer'
+        if action == 'hint':
+            print(self.cursor.execute(f'''
+                                    SELECT hint_level, item FROM Player_hints
+    ''').fetchall())
+            hint_level = self.cursor.execute(f'''
+                                                 SELECT hint_level FROM Player_hints
+                                                 WHERE Player_hints.email = '{email}'
+                                                 AND Player_hints.item = '{item}'
+                                             ''').fetchone()[0]
 
-        self.cursor.execute('''SELECT h.{}
+            max_hint_level = self.cursor.execute(f'''
+                                                SELECT MAX(level) FROM Hints
+                                                WHERE item = '{item}'
+                                                 ''').fetchone()[0]
+            if  hint_level > max_hint_level:
+                return 'OVERLOAD'
+            else:
+                query = self.cursor.execute(f'''
+                                                            UPDATE Player_hints
+                                                            SET hint_level = hint_level + 1
+                                                            WHERE item = '{item}'
+                                                            ''')
+                self.conn.commit()
+            hint = self.cursor.execute(f'''
+                                SELECT answer FROM Hints
+                                WHERE item = '{item}' AND level = {hint_level}
+                                ''').fetchone()
+            print(hint)
+            return hint[0]
+        else:
+            self.cursor.execute('''SELECT h.{}
                     from Episodes as e
                     JOIN Hints as h on e.id = h.episode_id
                     WHERE h.item LIKE "{}" AND e.box_name LIKE "{}"'''.format(action, item, episode))
-        boo = self.cursor.fetchone()
-        if boo:
-            return boo[0]
-        else:
-            return False
+            boo = self.cursor.fetchone()
+            if boo:
+                return boo[0]
+            else:
+                return False
 
     def right_answer(self, email, first_name, last_name):
         sql = '''UPDATE Players SET answer_id=(
@@ -227,6 +296,47 @@ class DB:
             self.cursor.execute(sql)
         self.conn.commit()
 
+    def add_player(self, email):
+        self.cursor.execute(f'''
+                            INSERT INTO Players (email) VALUES ('{email}')
+                            ''')
+        self.conn.commit()
+
+    def get_player(self, email):
+        person = self.cursor.execute(f'''
+                            SELECT email FROM Players
+                            WHERE email = '{email}'
+                            ''').fetchone()
+        return person
+
+    def get_hint_level(self, email, item):
+        hint_level = self.cursor.execute(f'''SELECT hint_level FROM Player_hints
+                                             WHERE Player_hints.email = '{email}'
+                                             AND Player_hints.item = '{item}'
+                                                     ''').fetchone()
+        return hint_level
+
+    def add_player_item(self, email, item):
+        # self.cursor.execute("""CREATE TABLE IF NOT EXISTS Player_hints
+        #                           (
+        #                           id INTEGER PRIMARY KEY,
+        #                           player_id INTEGER REFERENCES PLAYERS(id),
+        #                           email TEXT,
+        #                           item TEXT REFERENCES Hints(item),
+        #                           hint_level INTEGER DEFAULT = 1,
+        #                           )
+        #                        """)
+        player_id = self.cursor.execute(f'''
+                                    SELECT id FROM Players
+                                    WHERE email = '{email}'
+                                    ''').fetchone()[0]
+        self.cursor.execute(f'''
+                            INSERT INTO Player_hints (player_id, email, item, hint_level)
+                             VALUES ({player_id}, '{email}', '{item}', 1)
+                            
+                            ''')
+        self.conn.commit()
+
     def wrong_answer(self, email):
         sql = '''UPDATE Players SET try=try+1 WHERE email="{}"'''.format(email)
         print(sql)
@@ -237,7 +347,6 @@ class DB:
             # print(sql)
             self.cursor.execute(sql)
         self.conn.commit()
-
 
     def get_try(self, email):
         sql = '''SELECT try FROM Players
@@ -285,7 +394,6 @@ class DB:
                 return True
             else:
                 return False
-
 
     def check_suspect_repeat(self, first_name, last_name):
         sql = '''
