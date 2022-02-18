@@ -2,8 +2,8 @@
 # -*- encoding: utf-8 -*-
 import os
 import re
+from random import choice
 import time
-from curses.ascii import isdigit
 
 import pymorphy2
 from dotenv import load_dotenv
@@ -31,6 +31,12 @@ items = db.get_all_items()
 print(sorted(items))
 print('код на открытие ящика' in items)
 list_of_ids = []
+
+list_of_answers = [
+    'Не совсем понимаю о чем речь, можете сформулировать свой вопрос иначе?',
+    'Извините, куча дел... Можете более конкретно задать ваш вопрос?',
+    'К сожалению не могу разобрать ваш вопрос',
+    'Пожалуйста, задавайте вопросы по делу, ничего не понятно...z']
 
 
 def send_mail(to, answer, subject):
@@ -82,9 +88,9 @@ def hint(episode, action, item, to, subject):
         db.add_player_item(to, item)
     answer = db.get_hint(episode, action, item, to)
     if answer == 'OVERLOAD':
-        answer = 'Подумайте сами'
+        answer = choice(list_of_answers)
     if not answer:
-        answer = 'Не совсем понимаю о чем речь, можете сформулировать свой вопрос иначе?'
+        answer = choice(list_of_answers)
     send_mail(to, answer, subject)
 
 
@@ -134,14 +140,19 @@ def main():
             action = ''
             item = ''
             flag = False
+            flag_to_photos = False
             if 'ПРОТОКОЛ' in normal_words:
                 item = 'Протокол опроса Кукушкиной Алины'
                 flag = True
+            elif 'ФОТОГРАФИЯ' in normal_words:
+                flag_to_photos = True
+                items_with_photos = [el for el in items if 'фотография' in el.lower()]
             for n_word in normal_words:
-                for el in items:
-                    if not flag and 'протокол' in str(el).lower():
+                items_to_iterate = items_with_photos if flag_to_photos else items
+                for el in items_to_iterate:
+                    if not flag and 'протокол' in str(el).lower()\
+                            or not flag_to_photos and 'фотография' in str(el).lower():
                         continue
-
                     if item:
                         break
                     test_word = ''
@@ -202,25 +213,14 @@ def main():
 С уважением,
 Кира Райнис'''
                         send_mail(FROM, string_ans, subject)
-            elif episode and sus_f_name and sus_l_name or episode and item and action:
-                # print(FROM[1])
-                # print(episode)
-                if sus_f_name and sus_l_name:
-                    # print(sus_f_name[0], sus_l_name[0])
-                    suspect(episode, sus_f_name[0], sus_l_name[0], FROM, subject)
+            elif episode and item and action:
                 if item and action:
                     print(episode, action, item, FROM, subject)
                     hint(episode, action, item, FROM, subject)
-                    # print(action, item)
-            else:
-                answer = 'Не совсем понимаю о чем речь, можете сформулировать свой вопрос иначе?'
-                send_mail(FROM, answer, subject)
 
             imap.delete(idm)
-
         else:
             print('null')
-
     imap.close()
 
 
