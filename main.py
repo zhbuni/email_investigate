@@ -227,5 +227,5 @@ def main():
 if __name__ == '__main__':
     print('started')
     while True:
-        main()https://accounts.google.com/DisplayUnlockCaptcha
+        main()
         time.sleep(5)
