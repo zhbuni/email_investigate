@@ -1,5 +1,5 @@
 import sqlite3
-from excel_test import get_parsed_table
+from EmailDetective.excel_test import get_parsed_table
 
 # Создание таблицы
 
@@ -12,6 +12,7 @@ count = 0
 for el in st:
     episodes.append((count, el, 0))
     count += 1
+print(episodes)
 # episodes = [
 #     (1, 'АФТ001', 0),
 #     (2, 'АФТ002', 0),
@@ -143,7 +144,8 @@ class DB:
                           player_id INTEGER REFERENCES PLAYERS(id),
                           email TEXT,
                           item TEXT REFERENCES Hints(item),
-                          hint_level INTEGER DEFAULT 1
+                          hint_level INTEGER DEFAULT 1,
+                          episode_id INTEGER
                           )
                        """)
 
@@ -236,32 +238,39 @@ class DB:
             action = 'hint'
         else:
             action = 'answer'
+        episode_from_db = self.cursor.execute(f'''
+                                                          SELECT id FROM Episodes
+                                                          WHERE box_name = "{episode}" 
+                                                          ''').fetchone()[0]
         if action == 'hint':
             print(self.cursor.execute(f'''
-                                    SELECT hint_level, item FROM Player_hints
+                                    SELECT hint_level, item FROM Player_hints WHERE episode_id = {episode_from_db}
     ''').fetchall())
             hint_level = self.cursor.execute(f'''
                                                  SELECT hint_level FROM Player_hints
                                                  WHERE Player_hints.email = '{email}'
                                                  AND Player_hints.item = '{item}'
+                                                 AND Player_hints.episode_id = {episode_from_db}
                                              ''').fetchone()[0]
 
             max_hint_level = self.cursor.execute(f'''
                                                 SELECT MAX(level) FROM Hints
                                                 WHERE item = '{item}'
                                                  ''').fetchone()[0]
-            if  hint_level > max_hint_level:
+            if hint_level > max_hint_level:
                 return 'OVERLOAD'
             else:
                 query = self.cursor.execute(f'''
                                                             UPDATE Player_hints
                                                             SET hint_level = hint_level + 1
-                                                            WHERE item = '{item}'
+                                                            WHERE item = '{item}' and episode_id = {episode_from_db}
                                                             ''')
                 self.conn.commit()
+            print(episode)
+
             hint = self.cursor.execute(f'''
                                 SELECT answer FROM Hints
-                                WHERE item = '{item}' AND level = {hint_level}
+                                WHERE item = '{item}' AND level = {hint_level} AND episode_id = {episode_from_db}
                                 ''').fetchone()
             print(hint)
             return hint[0]
@@ -309,14 +318,19 @@ class DB:
                             ''').fetchone()
         return person
 
-    def get_hint_level(self, email, item):
+    def get_hint_level(self, email, item, episode):
+        episode_id = self.cursor.execute(f'''
+                                                                          SELECT id FROM Episodes
+                                                                          WHERE box_name = "{episode}" 
+                                                                          ''').fetchone()[0]
         hint_level = self.cursor.execute(f'''SELECT hint_level FROM Player_hints
                                              WHERE Player_hints.email = '{email}'
                                              AND Player_hints.item = '{item}'
+                                             AND Player_hints.episode_id = {episode_id}
                                                      ''').fetchone()
         return hint_level
 
-    def add_player_item(self, email, item):
+    def add_player_item(self, email, item, episode):
         # self.cursor.execute("""CREATE TABLE IF NOT EXISTS Player_hints
         #                           (
         #                           id INTEGER PRIMARY KEY,
@@ -330,9 +344,13 @@ class DB:
                                     SELECT id FROM Players
                                     WHERE email = '{email}'
                                     ''').fetchone()[0]
+        episode_id = self.cursor.execute(f'''
+                                                                  SELECT id FROM Episodes
+                                                                  WHERE box_name = "{episode}" 
+                                                                  ''').fetchone()[0]
         self.cursor.execute(f'''
-                            INSERT INTO Player_hints (player_id, email, item, hint_level)
-                             VALUES ({player_id}, '{email}', '{item}', 1)
+                            INSERT INTO Player_hints (player_id, email, item, hint_level, episode_id)
+                             VALUES ({player_id}, '{email}', '{item}', 1, {episode_id})
                             
                             ''')
         self.conn.commit()

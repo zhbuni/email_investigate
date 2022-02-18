@@ -4,9 +4,9 @@ import os
 import re
 from random import choice
 import time
-
 import pymorphy2
 from dotenv import load_dotenv
+from excel_test import get_parsed_table
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -26,17 +26,14 @@ detective_password = os.environ['DETECTIVE_PASSWORD']
 
 db = DB("database.db")
 first_names, last_names = db.get_all_names()
-items = db.get_all_items()
-# items = ['папка выпускника']
-print(sorted(items))
-print('код на открытие ящика' in items)
+items = [(el['keyword'], el['theme']) for el in get_parsed_table()]
 list_of_ids = []
 
 list_of_answers = [
     'Не совсем понимаю о чем речь, можете сформулировать свой вопрос иначе?',
     'Извините, куча дел... Можете более конкретно задать ваш вопрос?',
     'К сожалению не могу разобрать ваш вопрос',
-    'Пожалуйста, задавайте вопросы по делу, ничего не понятно...z']
+    'Пожалуйста, задавайте вопросы по делу, ничего не понятно...']
 
 
 def send_mail(to, answer, subject):
@@ -83,9 +80,9 @@ def suspect(episode, sus_f_name, sus_l_name, to, subject):
 
 
 def hint(episode, action, item, to, subject):
-    hint_level = db.get_hint_level(to, item)
+    hint_level = db.get_hint_level(to, item, episode)
     if not hint_level:
-        db.add_player_item(to, item)
+        db.add_player_item(to, item, episode)
     answer = db.get_hint(episode, action, item, to)
     if answer == 'OVERLOAD':
         answer = choice(list_of_answers)
@@ -95,11 +92,9 @@ def hint(episode, action, item, to, subject):
 
 
 def main():
-    print('In main')
     imap = IMAP(imap_server, detective_login, detective_password)
 
     emails = imap.get_messages()
-    print(emails)
     if len(emails) > 0:
         for email in emails:
             if email[0] in list_of_ids:
@@ -113,6 +108,8 @@ def main():
                 message = message[:message.find('<')]
             else:
                 message = email[3]
+                if len(message.split(detective_mail)) != 1:
+                    message = message.split(detective_mail)[0]
             parsed_message = message.strip()
             print(FROM.strip())
             player = db.get_player(FROM.strip())
@@ -127,9 +124,9 @@ def main():
             for word in words:
                 p = morph.parse(word)[0]
                 normal_words.append(p.normal_form.upper())
-            print(normal_words)
             del words
-            episode = subject
+            episode = ' '.join(subject.split()[-2:])
+            print(episode)
             # try:
             #     episode = re.search(r'АФ\d+', subject.upper()).group(0)
             # except:
@@ -141,23 +138,25 @@ def main():
             item = ''
             flag = False
             flag_to_photos = False
-            if 'ПРОТОКОЛ' in normal_words:
-                item = 'Протокол опроса Кукушкиной Алины'
-                flag = True
-            elif 'ФОТОГРАФИЯ' in normal_words:
-                flag_to_photos = True
-                items_with_photos = [el for el in items if 'фотография' in el.lower()]
+
+            if 'ПРОТОКОЛ' in normal_words or 'ФОТОГРАФИЯ' in normal_words:
+                item_of_norm = 'ПРОТОКОЛ' if 'ПРОТОКОЛ' in normal_words else 'ФОТОГРАФИЯ'
+                flag = True if item_of_norm in normal_words else False
+                flag_to_photos = True if item_of_norm in normal_words else False
+                items_with_flag = [el for el in items if item_of_norm.lower()
+                                   in str(el[0]).lower() and el[1] == episode]
             for n_word in normal_words:
-                items_to_iterate = items_with_photos if flag_to_photos else items
+                items_to_iterate = items_with_flag if flag_to_photos or flag\
+                    else [el for el in items if el[1] == episode]
                 for el in items_to_iterate:
-                    if not flag and 'протокол' in str(el).lower()\
-                            or not flag_to_photos and 'фотография' in str(el).lower():
+                    if not flag and 'протокол' in str(el[0]).lower() \
+                            or not flag_to_photos and 'фотография' in str(el[0]).lower():
                         continue
                     if item:
                         break
                     test_word = ''
                     splitted_item = []
-                    for el1 in el.split():
+                    for el1 in str(el[0]).split():
                         p = morph.parse(el1)[0]
                         splitted_item.append(p.normal_form.upper())
                     for word in splitted_item:
@@ -167,13 +166,13 @@ def main():
                         continue
                     is_break = False
                     if len(message.split()) == 1:
-                        item = el
+                        item = el[0]
                         is_break = True
                         break
                     else:
                         for word in normal_words:
                             if word in splitted_item and word != test_word and not item:
-                                item = el
+                                item = el[0]
                                 is_break = True
                                 break
                     if is_break:
@@ -188,11 +187,12 @@ def main():
                     #     item = n_word
                 if n_word == 'ПОДСКАЗКА' or n_word == "ОТВЕТ":
                     action = n_word
+            print(f'item is {item}')
             if not action:
                 action = 'ПОДСКАЗКА'
             if episode and len(episode.split()) > 1 and episode.split()[1] == 'КОД':
                 digits = list(filter(lambda x: x.isdigit(), normal_words))
-                if len(digits) == 1:
+                if '420' in digits:
                     digit = digits[0]
                     if str(digit) == '420':
                         string_ans = '''Браво! Все получилось! Тут внутри Блокнот с записями и флешка (фото по ссылкам - https://clck.ru/bUU2Y, https://clck.ru/bUUNB ). 
