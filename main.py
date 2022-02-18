@@ -194,7 +194,7 @@ def main():
                 answer = 'Кажется вам сложно определиться. Кто-то из них точно виноват, а кто-то нет. ' \
                          'Я думаю вам нужно еще раз пройтись по уликам.'
                 send_mail(FROM, answer, subject)
-            elif episode and episode.split()[1] == 'КОД':
+            elif episode and len(episode.split()) > 1 and episode.split()[1] == 'КОД':
                 digits = list(filter(lambda x: x.isdigit(), normal_words))
                 if len(digits) == 1:
                     digit = digits[0]
@@ -227,5 +227,5 @@ def main():
 if __name__ == '__main__':
     print('started')
     while True:
-        main()
+        main()https://accounts.google.com/DisplayUnlockCaptcha
         time.sleep(5)
