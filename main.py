@@ -190,11 +190,7 @@ def main():
                     action = n_word
             if not action:
                 action = 'ПОДСКАЗКА'
-            if len(sus_f_name) > 1 or len(sus_l_name) > 1:
-                answer = 'Кажется вам сложно определиться. Кто-то из них точно виноват, а кто-то нет. ' \
-                         'Я думаю вам нужно еще раз пройтись по уликам.'
-                send_mail(FROM, answer, subject)
-            elif episode and len(episode.split()) > 1 and episode.split()[1] == 'КОД':
+            if episode and len(episode.split()) > 1 and episode.split()[1] == 'КОД':
                 digits = list(filter(lambda x: x.isdigit(), normal_words))
                 if len(digits) == 1:
                     digit = digits[0]
