@@ -26,13 +26,13 @@ def get_parsed_table():
         tip_2 = sheet_ranges[4][i].value
         tip_3 = sheet_ranges[5][i].value
         if all((theme, keyword)):
-            dct['episode_number'] = episode_number
-            dct['theme'] = theme
-            dct['episode'] = episode
-            dct['keyword'] = keyword
-            dct['tip_1'] = tip_1
-            dct['tip_2'] = tip_2
-            dct['tip_3'] = tip_3
+            dct['episode_number'] = str(episode_number).strip()
+            dct['theme'] = str(theme).strip()
+            dct['episode'] = str(episode).strip()
+            dct['keyword'] = str(keyword).strip()
+            dct['tip_1'] = str(tip_1).strip()
+            dct['tip_2'] = str(tip_2).strip()
+            dct['tip_3'] = str(tip_3).strip()
             list_of_themes.append(dct)
             # dict_of_themes[episode] = {}
             # dict_of_themes[episode]['theme'] = theme

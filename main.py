@@ -26,7 +26,10 @@ detective_password = os.environ['DETECTIVE_PASSWORD']
 
 db = DB("database.db")
 first_names, last_names = db.get_all_names()
-items = [(el['keyword'], el['theme']) for el in get_parsed_table()]
+items = [(str(el['keyword']).strip(), el['theme']) for el in get_parsed_table()]
+for el in items:
+    if el[1] == 'АФ032020 БАКУ':
+        print(el)
 list_of_ids = []
 
 list_of_answers = [
@@ -84,11 +87,8 @@ def hint(episode, action, item, to, subject):
     if not hint_level:
         db.add_player_item(to, item, episode)
     answer = db.get_hint(episode, action, item, to)
-    if answer == 'OVERLOAD':
-        answer = choice(list_of_answers)
-    if not answer:
-        answer = choice(list_of_answers)
-    send_mail(to, answer, subject)
+    if answer != 'OVERLOAD':
+        send_mail(to, answer, subject)
 
 
 def main():
@@ -124,35 +124,41 @@ def main():
             for word in words:
                 p = morph.parse(word)[0]
                 normal_words.append(p.normal_form.upper())
+            # if 'КУКУШКИН' in normal_words:
+            #     normal_words.append('КУКУШКИНА')
             del words
             episode = ' '.join(subject.split()[-2:])
             print(episode)
-            # try:
-            #     episode = re.search(r'АФ\d+', subject.upper()).group(0)
-            # except:
-            #     episode = ''
-            # print(episode)
             sus_f_name = []
             sus_l_name = []
             action = ''
             item = ''
             flag = False
-            flag_to_photos = False
-
-            if 'ПРОТОКОЛ' in normal_words or 'ФОТОГРАФИЯ' in normal_words:
-                item_of_norm = 'ПРОТОКОЛ' if 'ПРОТОКОЛ' in normal_words else 'ФОТОГРАФИЯ'
+            hard_words = ['фотография', "фото", "протокол", "стенограмма", "пост", 'тоже']
+            hard_words = [el.upper() for el in hard_words]
+            item_of_norm = None
+            items_with_flag = []
+            print(set(hard_words), set(normal_words))
+            if len(set(hard_words).intersection(set(normal_words))) == 1:
+                item_of_norm = set(hard_words).intersection(set(normal_words)).pop()
                 flag = True if item_of_norm in normal_words else False
-                flag_to_photos = True if item_of_norm in normal_words else False
+                print(episode == 'АФ032020 БАКУ')
+                lst = [el for el in items if el[1] == episode]
                 items_with_flag = [el for el in items if item_of_norm.lower()
                                    in str(el[0]).lower() and el[1] == episode]
             for n_word in normal_words:
-                items_to_iterate = items_with_flag if flag_to_photos or flag\
-                    else [el for el in items if el[1] == episode]
+                items_to_iterate = items_with_flag if flag else [el for el in items if el[1] == episode]
+                print(items_to_iterate)
+                break_normal = False
+                if break_normal:
+                    break
                 for el in items_to_iterate:
-                    if not flag and 'протокол' in str(el[0]).lower() \
-                            or not flag_to_photos and 'фотография' in str(el[0]).lower():
-                        continue
+                    if not flag:
+                        inter = len(set(hard_words).intersection(set([el1.upper() for el1 in str(el[0]).split()])))
+                        if inter:
+                            continue
                     if item:
+                        break_normal = True
                         break
                     test_word = ''
                     splitted_item = []
@@ -165,16 +171,19 @@ def main():
                     if not test_word:
                         continue
                     is_break = False
-                    if len(message.split()) == 1:
+                    if len(splitted_item) == 1:
                         item = el[0]
                         is_break = True
                         break
                     else:
-                        for word in normal_words:
-                            if word in splitted_item and word != test_word and not item:
-                                item = el[0]
-                                is_break = True
-                                break
+                        if not flag:
+                            item = el[0]
+                        else:
+                            for word in normal_words:
+                                if word in splitted_item and word != test_word and not item:
+                                    item = el[0]
+                                    is_break = True
+                                    break
                     if is_break:
                         break
                     if n_word.startswith('АФ'):
@@ -201,19 +210,21 @@ def main():
 С уважением,
 Кира Райнис'''
                         send_mail(FROM, string_ans, subject)
-                    else:
-                        string_ans = '''Не подходит. 
+                elif len(digits) > 0:
+                    string_ans = '''Не подходит. 
 Подумайте еще.
 Жду вашу версию.
                                     
 С уважением,
 Кира Райнис'''
-                        send_mail(FROM, string_ans, subject)
+                    send_mail(FROM, string_ans, subject)
             elif episode and item and action:
                 if item and action:
                     print(episode, action, item, FROM, subject)
                     hint(episode, action, item, FROM, subject)
-
+            else:
+                answer = choice(list_of_answers)
+                send_mail(FROM, answer, subject)
             imap.delete(idm)
         else:
             print('null')

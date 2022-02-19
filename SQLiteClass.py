@@ -256,16 +256,19 @@ class DB:
             max_hint_level = self.cursor.execute(f'''
                                                 SELECT MAX(level) FROM Hints
                                                 WHERE item = '{item}'
+                                                AND episode_id = {episode_from_db}
                                                  ''').fetchone()[0]
             if hint_level > max_hint_level:
-                return 'OVERLOAD'
+                hint_level = 1
             else:
-                query = self.cursor.execute(f'''
-                                                            UPDATE Player_hints
-                                                            SET hint_level = hint_level + 1
-                                                            WHERE item = '{item}' and episode_id = {episode_from_db}
-                                                            ''')
-                self.conn.commit()
+                if max_hint_level != hint_level:
+                    query = self.cursor.execute(f'''
+                                                                UPDATE Player_hints
+                                                                SET hint_level = hint_level + 1
+                                                                WHERE item = '{item}' and episode_id = {episode_from_db}
+                                                                ''')
+                    self.conn.commit()
+
             print(episode)
 
             hint = self.cursor.execute(f'''
