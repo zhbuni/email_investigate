@@ -259,7 +259,7 @@ class DB:
                                                 AND episode_id = {episode_from_db}
                                                  ''').fetchone()[0]
             if hint_level > max_hint_level:
-                hint_level = 1
+                hint_level = max_hint_level - 1
             else:
                 if max_hint_level != hint_level:
                     query = self.cursor.execute(f'''
@@ -269,7 +269,7 @@ class DB:
                                                                 ''')
                     self.conn.commit()
 
-            print(episode)
+            print(episode, )
 
             hint = self.cursor.execute(f'''
                                 SELECT answer FROM Hints
