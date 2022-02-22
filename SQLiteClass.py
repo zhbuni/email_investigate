@@ -7,11 +7,14 @@ table = get_parsed_table()
 
 # id, episode, suspect_id
 episodes = []
-st = set([el['theme'] for el in table[1:]])
+st = [el['theme'] for el in table[1:]]
 count = 0
+st_of_episodes = set()
 for el in st:
-    episodes.append((count, el, 0))
-    count += 1
+    if el not in st_of_episodes:
+        episodes.append((count, el, 0))
+        count += 1
+        st_of_episodes.add(el)
 print(episodes)
 # episodes = [
 #     (1, 'АФТ001', 0),
@@ -62,12 +65,12 @@ for el in table[1:]:
     level = 1
     answer = el['tip_1']
     hints.append((count, episode_id, item, hint, level, answer))
-    if el['tip_2']:
+    if el['tip_2'] != 'None':
         count += 1
         level += 1
         answer = el['tip_2']
         hints.append((count, episode_id, item, hint, level, answer))
-    if el['tip_3']:
+    if el['tip_3'] != 'None':
         count += 1
         level += 1
         answer = el['tip_3']
@@ -252,12 +255,13 @@ class DB:
                                                  AND Player_hints.item = '{item}'
                                                  AND Player_hints.episode_id = {episode_from_db}
                                              ''').fetchone()[0]
-
+            print(f'item is {item}', episode_from_db)
             max_hint_level = self.cursor.execute(f'''
-                                                SELECT MAX(level) FROM Hints
-                                                WHERE item = '{item}'
-                                                AND episode_id = {episode_from_db}
-                                                 ''').fetchone()[0]
+                                                            SELECT MAX(level) FROM Hints
+                                                            WHERE item = '{item}'
+                                                            AND episode_id = {episode_from_db}
+                                                             ''').fetchone()[0]
+            print(max_hint_level)
             if hint_level >= max_hint_level:
                 hint_level = 1
                 query = self.cursor.execute(f'''
@@ -277,14 +281,14 @@ class DB:
                                                                 ''')
                     self.conn.commit()
 
-            print(episode, hint_level)
+            print(episode, hint_level, max_hint_level)
 
             hint = self.cursor.execute(f'''
                                 SELECT answer FROM Hints
                                 WHERE item = '{item}' AND level = {hint_level} AND episode_id = {episode_from_db}
-                                ''').fetchone()
+                                ''').fetchone()[0]
             print(hint)
-            return hint[0]
+            return hint
         else:
             self.cursor.execute('''SELECT h.{}
                     from Episodes as e
