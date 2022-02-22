@@ -134,7 +134,7 @@ def main():
             action = ''
             item = ''
             flag = False
-            hard_words = ['фотография', "фото", "протокол", "стенограмма", "пост", 'тоже']
+            hard_words = ['фотография', "фото", "протокол", "стенограмма", "пост", 'тоже', "жалоба"]
             hard_words = [el.upper() for el in hard_words]
             item_of_norm = None
             items_with_flag = []
