@@ -259,7 +259,15 @@ class DB:
                                                 AND episode_id = {episode_from_db}
                                                  ''').fetchone()[0]
             if hint_level > max_hint_level:
-                hint_level = max_hint_level - 1
+                hint_level = 1
+                query = self.cursor.execute(f'''
+                                                                 UPDATE Player_hints SET hint_level = 1
+                                                                 WHERE Player_hints.email = '{email}'
+                                                                 AND Player_hints.item = '{item}'
+                                                                 AND Player_hints.episode_id = {episode_from_db}
+                                                             ''')
+                self.conn.commit()
+
             else:
                 if max_hint_level != hint_level:
                     query = self.cursor.execute(f'''
