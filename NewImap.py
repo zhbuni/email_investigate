@@ -15,8 +15,6 @@ class IMAP:
                                       mark_seen=False):
             lst = [msg.uid, msg.from_, msg.subject, msg.text, msg.html]
             uids.append(lst)
-        # uids = [[msg.uid, msg.from_, msg.subject, msg.text] for msg in self.mailbox.fetch(reverse=True, limit=1,
-        #                                                                                   mark_seen=False)]
 
         if len(uids) > 0:
             return uids

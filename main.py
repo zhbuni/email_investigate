@@ -24,7 +24,13 @@ detective_mail = os.environ['DETECTIVE_MAIL']
 detective_login = os.environ['DETECTIVE_LOGIN']
 detective_password = os.environ['DETECTIVE_PASSWORD']
 
+
 db = DB("database.db")
+try:
+    db.create_db()
+    db.fill_db()
+except:
+    print(0)
 first_names, last_names = db.get_all_names()
 items = [(str(el['keyword']).strip(), el['theme']) for el in get_parsed_table()]
 for el in items:

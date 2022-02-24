@@ -28,13 +28,6 @@ class SMTP:
         ))
         self.server.sendmail(self.FROM, TO, BODY.encode('utf-8'))
 
-        # msg = EmailMessage()
-        # msg['Subject'] = SUBJECT
-        # msg['From'] = Address("Pepé Le Pew", "pepe", self.FROM)
-        # msg['To'] = (Address("Penelope Pussycat", "penelope", TO))
-        # msg.set_content(TEXT)
-        # self.server.send_message(msg)
-
     def close(self):
         """Отклюситься от сервера"""
         self.server.quit()
