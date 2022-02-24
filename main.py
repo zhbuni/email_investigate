@@ -31,7 +31,6 @@ try:
     db.fill_db()
 except:
     print(0)
-first_names, last_names = db.get_all_names()
 items = [(str(el['keyword']).strip(), el['theme']) for el in get_parsed_table()]
 for el in items:
     if el[1] == 'АФ032020 БАКУ':
@@ -53,43 +52,6 @@ def send_mail(to, answer, subject):
     smtp = SMTP(smtp_server, detective_login, detective_password, detective_mail)
     smtp.send_mail(to, 'RE:{}'.format(subject), answer)
     smtp.close()
-
-
-def suspect(episode, sus_f_name, sus_l_name, to, subject):
-    # print(episode, sus_l_name, sus_f_name)
-    answer = db.check_suspect(episode, sus_f_name, sus_l_name)
-    if db.check_suspect_repeat(sus_f_name, sus_l_name):
-        email = 'Мы уже все выяснили про этого подозреваемого'
-        send_mail(to, email, subject)
-    else:
-        if answer:
-            email = 'Молодец! {} {} действительно невиновен.\n'.format(sus_f_name.capitalize(), sus_l_name.capitalize())
-            if not db.get_try(to):
-                email += 'Вот материалы которые подтверждают твою догадку: {}\n'.format(answer)
-            db.right_answer(to, sus_f_name, sus_l_name)
-            if db.get_guessed(to) >= db.get_suspect_count(episode):
-                db.rezoing(to)
-                email += 'Жди новую коробку!'
-            else:
-                evidence = db.get_second_evidence(to)
-                email += 'Кажется из имеющихся улик можно вычеркнуть еще одного. Взгляни на эти материалы {}'.format(evidence)
-            if db.if_final(episode):
-                email = 'Убийца найден! Спасибо за помощь!'
-            send_mail(to, email, subject)
-        elif not answer:
-            email = 'Нельзя однозначно вычеркнуть подозреваемого {} {} из списка подозреваемых.\n'.format(
-                sus_f_name.capitalize(), sus_l_name.capitalize())
-
-            if db.if_final(episode):
-                email = 'Ты уверен в этом?'
-
-            if not db.get_try(to):
-                evidence = db.get_evidence(episode)
-                email += 'Вот материалы которые могут помочь: {}\n'.format(evidence)
-
-            db.wrong_answer(to)
-
-            send_mail(to, email, subject)
 
 
 def hint(episode, action, item, to, subject):

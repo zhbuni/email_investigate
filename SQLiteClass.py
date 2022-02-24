@@ -181,22 +181,6 @@ class DB:
         self.cursor.execute('''DROP TABLE Suspects''')
         self.cursor.execute('''DROP TABLE Players''')
 
-    def get_all_names(self):
-        """Получить массивы с уникальными именами фамилиями"""
-        self.cursor.execute("""SELECT * from Suspects""")
-        arr = self.cursor.fetchall()
-        first_names = []
-        last_names = []
-        for i in range(len(arr)):
-            first = arr[i][1]
-            last = arr[i][2]
-            if first not in first_names:
-                first_names.append(first)
-            if last not in last_names:
-                last_names.append(last)
-
-        return first_names, last_names
-
     def get_all_items(self):
         """Получить массивв с ключевыми словами для подсказок"""
         self.cursor.execute("""SELECT item FROM Hints""")
@@ -205,36 +189,6 @@ class DB:
         for i in range(len(arr)):
             items.append(arr[i][0])
         return items
-
-    def get_box(self, box_name):
-        sql = '''
-                SELECT e.box_name, h.episode_id, s.first_name, s.last_name, h.item, h.hint, h.answer
-                    from Episodes as e
-                    JOIN Suspects as s on e.id = s.episode_id
-                    JOIN Hints as h on e.id = h.episode_id
-                    WHERE e.box_name LIKE "%{}%"
-                '''.format(box_name)
-        self.cursor.execute(sql)
-        arr = self.cursor.fetchall()
-        print(arr)
-
-    def check_suspect(self, episode, first_name, last_name):
-        """Проверить подозреваемого"""
-        sql = '''
-        SELECT s.evidence from Answers as a
-        JOIN Episodes as e on a.episode_id = e.id
-        JOIN Suspects as s on a.suspect_id = s.id
-        WHERE s.first_name LIKE "{}" AND last_name LIKE "{}"
-        AND e.box_name LIKE "{}"
-        '''.format(first_name, last_name, episode)
-        # print(sql)
-        self.cursor.execute(sql)
-        boo = self.cursor.fetchone()
-        # print(boo)
-        if boo:
-            return boo[0]
-        else:
-            return False
 
     def get_hint(self, episode, action, item, email):
         if action == 'ПОДСКАЗКА':
@@ -300,26 +254,6 @@ class DB:
             else:
                 return False
 
-    def right_answer(self, email, first_name, last_name):
-        sql = '''UPDATE Players SET answer_id=(
-            SELECT A.id FROM Answers A join Suspects S on S.id = A.suspect_id
-            WHERE S.first_name LIKE "{}"
-            AND S.last_name LIKE "{}"
-        ), try=0, guessed=guessed+1
-        WHERE email="{}"
-        '''.format(first_name, last_name, email)
-        # print(sql)
-        self.cursor.execute(sql)
-        if self.cursor.rowcount < 1:
-            sql = '''INSERT INTO Players (email, answer_id, try, guessed) VALUES ("{}", (
-            SELECT A.id FROM Answers A join Suspects S on S.id = A.suspect_id
-            WHERE S.first_name LIKE "{}"
-            AND S.last_name LIKE "{}"
-        ), 0, 1)'''.format(email, first_name, last_name)
-            # print(sql)
-            self.cursor.execute(sql)
-        self.conn.commit()
-
     def add_player(self, email):
         self.cursor.execute(f'''
                             INSERT INTO Players (email) VALUES ('{email}')
@@ -369,119 +303,3 @@ class DB:
                             
                             ''')
         self.conn.commit()
-
-    def wrong_answer(self, email):
-        sql = '''UPDATE Players SET try=try+1 WHERE email="{}"'''.format(email)
-        print(sql)
-        self.cursor.execute(sql)
-        print(self.cursor.rowcount)
-        if self.cursor.rowcount < 1:
-            sql = '''INSERT INTO Players (email, answer_id, try, guessed) VALUES ("{}", 0, 1, 0)'''.format(email)
-            # print(sql)
-            self.cursor.execute(sql)
-        self.conn.commit()
-
-    def get_try(self, email):
-        sql = '''SELECT try FROM Players
-            WHERE email="{}"
-            '''.format(email)
-        # print(sql)
-        self.cursor.execute(sql)
-        boo = self.cursor.fetchone()
-        if boo:
-            return True
-        else:
-            return False
-
-    def get_guessed(self, email):
-        sql = '''SELECT guessed FROM Players
-            WHERE email="{}"
-            '''.format(email)
-        # print(sql)
-        self.cursor.execute(sql)
-        boo = self.cursor.fetchone()
-        if boo:
-            return boo[0]
-        else:
-            return 0
-
-    def get_suspect_count(self, episode):
-        sql = '''
-        SELECT count(*) FROM Answers WHERE episode_id = (SELECT id FROM Episodes WHERE box_name LIKE "{}")
-        '''.format(episode)
-        self.cursor.execute(sql)
-        boo = self.cursor.fetchone()
-        if boo:
-            return boo[0]
-        else:
-            return 0
-
-    def if_final(self, episode):
-        sql = '''
-            SELECT is_final FROM Episodes WHERE box_name LIKE "{}"
-        '''.format(episode)
-        self.cursor.execute(sql)
-        boo = self.cursor.fetchone()
-        if boo:
-            if boo[0] == 1:
-                return True
-            else:
-                return False
-
-    def check_suspect_repeat(self, first_name, last_name):
-        sql = '''
-            SELECT answer_id from Players P JOIN Answers A on P.answer_id = A.id JOIN Suspects S on S.id = A.suspect_id
-            WHERE S.first_name LIKE "{}" AND S.last_name LIKE "{}"
-        '''.format(first_name, last_name)
-        self.cursor.execute(sql)
-        boo = self.cursor.fetchone()
-        if boo:
-            return True
-        else:
-            return False
-
-    def get_evidence(self, episode):
-        sql='''
-            SELECT evidence FROM Suspects
-            WHERE id = (
-                SELECT suspect_id from Answers A JOIN Episodes E on E.id = A.episode_id
-                WHERE E.box_name LIKE "{}"
-                LIMIT 1
-                )
-        '''.format(episode)
-        self.cursor.execute(sql)
-        boo = self.cursor.fetchone()
-        if boo:
-            return boo[0]
-        else:
-            return False
-
-    def get_second_evidence(self, email):
-        sql = '''
-        SELECT evidence FROM Suspects S JOIN Answers A on S.id = A.suspect_id
-        WHERE A.episode_id = (
-            SElECT episode_id FROM Answers A JOIN Players P on A.id = P.answer_id
-            WHERE P.email LIKE "{}"
-        )
-        AND A.id != (
-            SELECT answer_id FROM Players WHERE email LIKE "{}"
-        )
-        '''.format(email, email)
-        self.cursor.execute(sql)
-        boo = self.cursor.fetchone()
-        if boo:
-            return boo[0]
-        else:
-            return False
-
-    def rezoing(self, email):
-        sql='''
-            DELETE FROM Players WHERE email LIKE "{}"
-        '''.format(email)
-        # sql = '''
-        # UPDATE Players SET try=0, guessed=0
-        # WHERE email LIKE "{}"
-        # '''.format(email)
-        self.cursor.execute(sql)
-        self.conn.commit()
-
