@@ -217,9 +217,11 @@ def main(imap):
 
 
 if __name__ == '__main__':
+    cnt = 0
     print('started')
     while True:
         mailbox = IMAP(imap_server, detective_login, detective_password)
         main(mailbox)
-        time.sleep(5)
-        print('_______________________________________________________________')
+        time.sleep(60)
+        print(f'_______________________________________________________________{cnt}')
+        cnt += 1
