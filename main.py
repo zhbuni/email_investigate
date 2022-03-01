@@ -218,8 +218,8 @@ def main(imap):
 
 if __name__ == '__main__':
     print('started')
-    mailbox = IMAP(imap_server, detective_login, detective_password)
-    with mailbox.get_mail_box() as imap:
-        while True:
-            main(mailbox)
-            time.sleep(60)
+    while True:
+        mailbox = IMAP(imap_server, detective_login, detective_password)
+        main(mailbox)
+        time.sleep(5)
+        print('_______________________________________________________________')
