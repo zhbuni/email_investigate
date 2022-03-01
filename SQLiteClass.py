@@ -15,17 +15,6 @@ for el in st:
         episodes.append((count, el, 0))
         count += 1
         st_of_episodes.add(el)
-print(episodes)
-# episodes = [
-#     (1, 'АФТ001', 0),
-#     (2, 'АФТ002', 0),
-#     (3, 'АФТ003', 0),
-#     (4, 'АФТ004', 0),
-#     (5, 'АФТ005', 0),
-#     (6, 'АФТ006', 1),
-# ]
-
-# id, episode_id, first_name, last_name, evidence
 suspects = [
     (1, 'МАКСИМ', 'ИВАНОВ', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
     (2, 'ИГОРЬ', 'СМИРНОВ', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
@@ -52,9 +41,6 @@ answers = [
     (9, 6, 9),
 ]
 
-# player_id, email, answer_id
-# players = []
-
 # id, episode_id, item, hint, level, answer
 hints = []
 count = 0
@@ -76,23 +62,6 @@ for el in table[1:]:
         answer = el['tip_3']
         hints.append((count, episode_id, item, hint, level, answer))
     count += 1
-# print(hints)
-# hints = [
-#     (0, 1, 'ФОНАРИК1', 'Подсказка Фонарик1', 1, 'Ответ Фонарик1'),
-#     (1, 1, 'ФОНАРИК1', 'Подсказка Фонарик2', 2, 'Ответ Фонарик2'),
-#     (2, 1, 'АЛЬБОМ1', 'Подсказка АЛЬБОМ1', 1, 'Ответ АЛЬБОМ'),
-#     (3, 2, 'КОМПАС', 'Подсказка АЛЬБОМ1', 1, 'Ответ АЛЬБОМ'),
-#     (4, 2, 'РУЧКА', 'Подсказка РУЧКА', 1, 'Ответ РУЧКА'),
-#     (5, 3, 'БЛОКНОТ', 'Подсказка БЛОКНОТ', 1, 'Ответ БЛОКНОТ'),
-#     (6, 3, 'КАРАНДАШ', 'Подсказка КАРАНДАШ', 1, 'Ответ КАРАНДАШ'),
-#     (7, 4, 'МЫШЬ', 'Подсказка МЫШЬ', 1, 'Ответ МЫШЬ'),
-#     (8, 4, 'НАУШНИКИ', 'Подсказка НАУШНИКИ', 1, 'Ответ НАУШНИКИ'),
-#     (9, 5, 'ФОТО', 'Подсказка ФОТО', 1, 'Ответ ФОТО'),
-#     (10, 5, 'БУТЫЛКА', 'Подсказка БУТЫЛКА', 1, 'Ответ БУТЫЛКА'),
-#     (11, 6, 'КРОВЬ', 'Подсказка КРОВЬ', 1, 'Ответ КРОВЬ'),
-#     (12, 6, 'ШПРИЦ', 'Подсказка ШПРИЦ', 1, 'Ответ ШПРИЦ'),
-# ]
-
 
 class DB:
     """Операции с БД"""
@@ -209,13 +178,11 @@ class DB:
                                                  AND Player_hints.item = '{item}'
                                                  AND Player_hints.episode_id = {episode_from_db}
                                              ''').fetchone()[0]
-            print(f'item is {item}', episode_from_db)
             max_hint_level = self.cursor.execute(f'''
                                                             SELECT MAX(level) FROM Hints
                                                             WHERE item = '{item}'
                                                             AND episode_id = {episode_from_db}
                                                              ''').fetchone()[0]
-            print(max_hint_level)
             if hint_level >= max_hint_level:
                 hint_level = 1
                 query = self.cursor.execute(f'''
@@ -241,7 +208,6 @@ class DB:
                                 SELECT answer FROM Hints
                                 WHERE item = '{item}' AND level = {hint_level} AND episode_id = {episode_from_db}
                                 ''').fetchone()[0]
-            print(hint)
             return hint
         else:
             self.cursor.execute('''SELECT h.{}

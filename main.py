@@ -32,9 +32,7 @@ try:
 except:
     print(0)
 items = [(str(el['keyword']).strip(), el['theme']) for el in get_parsed_table()]
-for el in items:
-    if el[1] == 'АФ032020 БАКУ':
-        print(el)
+
 list_of_ids = []
 
 list_of_answers = [
@@ -63,8 +61,9 @@ def hint(episode, action, item, to, subject):
         send_mail(to, answer, subject)
 
 
-def main():
-    imap = IMAP(imap_server, detective_login, detective_password)
+def main(imap):
+    # with IMAP(imap_server, detective_login, detective_password) as imap:
+    # imap = IMAP(imap_server, detective_login, detective_password)
 
     emails = imap.get_messages()
     if len(emails) > 0:
@@ -215,11 +214,12 @@ def main():
             imap.delete(idm)
         else:
             print('null')
-    imap.close()
 
 
 if __name__ == '__main__':
     print('started')
-    while True:
-        main()
-        time.sleep(5)
+    mailbox = IMAP(imap_server, detective_login, detective_password)
+    with mailbox.get_mail_box() as imap:
+        while True:
+            main(mailbox)
+            time.sleep(60)

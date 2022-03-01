@@ -8,6 +8,9 @@ class IMAP:
         self.mailbox = MailBox(uri)
         self.mailbox.login(login, password, initial_folder='INBOX')
 
+    def get_mail_box(self):
+        return self.mailbox
+
     def get_messages(self):
         """Получение массива UID сообщений из папки входящее если есть"""
         uids = []
