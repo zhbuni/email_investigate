@@ -1,5 +1,5 @@
 import sqlite3
-from excel_test import get_parsed_table
+from .excel_test import get_parsed_table
 
 # Создание таблицы
 

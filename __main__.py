@@ -6,7 +6,7 @@ from random import choice
 import time
 import pymorphy2
 from dotenv import load_dotenv
-from excel_test import get_parsed_table
+from .excel_test import get_parsed_table
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -14,9 +14,9 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
 
-from NewImap import IMAP
-from SmtpClass import SMTP
-from SQLiteClass import DB
+from .NewImap import IMAP
+from .SmtpClass import SMTP
+from .SQLiteClass import DB
 
 imap_server = os.environ['IMAP_SERVER']
 smtp_server = os.environ['SMTP_SERVER']
@@ -217,11 +217,8 @@ def main(imap):
 
 
 if __name__ == '__main__':
-    cnt = 0
     print('started')
     while True:
         mailbox = IMAP(imap_server, detective_login, detective_password)
         main(mailbox)
         time.sleep(60)
-        print(f'_______________________________________________________________{cnt}')
-        cnt += 1
