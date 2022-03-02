@@ -6,7 +6,7 @@ from pprint import pprint
 def get_parsed_table():
     dict_of_themes = {}
     list_of_themes = []
-    xlsx_file = Path('./mail.xlsx')
+    xlsx_file = Path('./email_investigate/mail.xlsx')
     wb_obj = openpyxl.load_workbook(xlsx_file)
 
     sheet = wb_obj.active
